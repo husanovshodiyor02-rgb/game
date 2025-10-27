@@ -3,45 +3,41 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>🚗 Mashina Jangi — 3D shahar & tovush</title>
+<title>🚗 Mashina Jangi — 3D shahar & real tovush</title>
 <style>
   :root{
-    --bg:#071026; --road:#2b2b2b; --lane:#dcdcdc;
+    --bg:#071026; --road:#2b2b2b; --lane:#dcdcdc; --accent:#60a5fa;
     --hud-bg: rgba(0,0,0,0.45);
-    --accent: #60a5fa;
   }
   *{box-sizing:border-box}
   body{margin:0;min-height:100vh;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#041224,#07102a);color:#fff;overflow:hidden}
-  /* city layers (parallax) */
+  /* parallax city */
   #city{position:fixed;inset:0;z-index:0;pointer-events:none}
   .layer{position:absolute;left:50%;top:50%;transform-origin:center;will-change:transform}
-  .layer.far{width:2000px;height:420px;transform:translate3d(-50%,-60%,-300px) scale(1.1);filter:blur(6px) saturate(.9);opacity:.75;background:linear-gradient(180deg,#06122a,#07102a)}
+  .layer.far{width:2000px;height:420px;transform:translate3d(-50%,-60%,-300px) scale(1.05);filter:blur(6px) saturate(.9);opacity:.75;background:linear-gradient(180deg,#06122a,#07102a)}
   .layer.mid{width:2000px;height:420px;transform:translate3d(-50%,-50%,-120px) scale(.98);background:linear-gradient(180deg,#071733,#051226)}
   .layer.near{width:2000px;height:340px;transform:translate3d(-50%,-40%,-40px) scale(1);background:linear-gradient(180deg,#072033,#031827)}
-  /* blinking lights */
   .lights{position:absolute;inset:auto 0 100px 0;height:120px}
   .light{position:absolute;bottom:40px;width:8px;height:8px;border-radius:50%;background: #ffd86b;box-shadow:0 0 12px 3px rgba(255,200,100,0.08);animation:blink 1.6s infinite}
   @keyframes blink{0%{opacity:.2}50%{opacity:1}100%{opacity:.2}}
 
-  /* stage */
+  /* stage and canvas */
   #wrap{position:relative;z-index:2;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
   canvas{background:transparent;display:block;border-radius:10px;box-shadow:0 8px 30px rgba(2,6,23,.6);}
 
-  /* HUD & controls */
+  /* HUD */
   #hud{position:fixed;left:12px;top:12px;background:var(--hud-bg);padding:8px 12px;border-radius:10px;z-index:4;font-weight:700}
   #hud small{display:block;font-weight:400;color:#bcd2df;margin-top:6px}
+
+  /* overlay & controls */
   #overlay{position:fixed;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;flex-direction:column;background:rgba(0,0,0,.55);gap:12px}
   .btn{background:var(--accent);border:none;padding:12px 18px;border-radius:10px;color:#022237;font-weight:800;cursor:pointer}
-  /* mobile controls */
-  #controls{position:fixed;left:0;right:0;bottom:18px;display:flex;justify-content:space-around;z-index:5;padding:0 22px;pointer-events:initial}
-  .ctl{width:88px;height:88px;border-radius:50%;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;font-size:34px;color:var(--accent);user-select:none}
+  #controls{position:fixed;left:0;right:0;bottom:18px;display:flex;justify-content:space-around;z-index:5;padding:0 22px;pointer-events:none}
+  .ctl{width:88px;height:88px;border-radius:50%;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;font-size:34px;color:var(--accent);user-select:none;touch-action:none}
   /* gameover */
   #gameover{position:fixed;inset:0;z-index:7;display:none;align-items:center;justify-content:center}
   .goBox{background:linear-gradient(180deg,#081827,#04202b);padding:20px;border-radius:10px;text-align:center}
-  /* responsive */
-  @media (max-width:640px){
-    canvas{width:92vw;height:calc(92vw * 1.6)}
-  }
+  @media (max-width:640px){ canvas{width:92vw;height:calc(92vw * 1.6)} .ctl{width:72px;height:72px;font-size:28px} }
 </style>
 </head>
 <body>
@@ -69,14 +65,14 @@
 <!-- HUD -->
 <div id="hud">
   Ball: <span id="score">0</span> &nbsp; Speed: <span id="spd">3.0</span>
-  <small>← → yoki ekranda tugmalar bilan boshqarish. Boshlash uchun STARTni bosing.</small>
+  <small>← → yoki ekranda tugmalar bilan boshqarish. Boshlash uchun START bosing.</small>
 </div>
 
-<!-- Overlay with START -->
+<!-- Overlay -->
 <div id="overlay">
-  <div style="font-size:22px;font-weight:900">🚗 Mashina Jangi — 3D fon & tovush</div>
+  <div style="font-size:22px;font-weight:900">🚗 Mashina Jangi — 3D & real tovush</div>
   <button id="startBtn" class="btn">START</button>
-  <div style="font-size:13px;color:#bcd2df">Mobil: chap/ong tugmalar bilan boshqarish. Bosish bilan ovoz yoqiladi.</div>
+  <div style="font-size:13px;color:#bcd2df">Mobil: chap/ong tugmalar yoki svayp bilan boshqarish. Bosish bilan ovoz yoqiladi.</div>
 </div>
 
 <!-- Mobile controls -->
@@ -94,12 +90,17 @@
   </div>
 </div>
 
-<!-- Audio (fallback HTML audio + WebAudio for engine control) -->
-<audio id="crashAudio" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c5f6c26c82.mp3?filename=impact-116026.mp3"></audio>
-<audio id="engineLoop" loop src="https://cdn.pixabay.com/download/audio/2021/09/02/audio_1a63db64e0.mp3?filename=engine-idle-loop-113691.mp3"></audio>
+<!-- Audio files (online sources) -->
+<!-- engine idle loop and rev sound from Pixabay (royalty-free) -->
+<audio id="engineIdle" loop preload="auto"
+  src="https://cdn.pixabay.com/download/audio/2021/09/28/audio_85ef77cb02.mp3?filename=car-engine-idle-loop-115591.mp3"></audio>
+<audio id="engineRev" preload="auto"
+  src="https://cdn.pixabay.com/download/audio/2021/10/05/audio_23b1b6b90a.mp3?filename=car-engine-rev-116109.mp3"></audio>
+<audio id="crashAudio" preload="auto"
+  src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c5f6c26c82.mp3?filename=impact-116026.mp3"></audio>
 
 <script>
-/* ===================== GAME SETUP ===================== */
+/* ========= GAME + AUDIO ========== */
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const startBtn = document.getElementById('startBtn');
@@ -109,9 +110,10 @@ const rightBtn = document.getElementById('rightBtn');
 const controls = document.getElementById('controls');
 const hudSpd = document.getElementById('spd');
 const hudScore = document.getElementById('score');
+const engineIdle = document.getElementById('engineIdle');
+const engineRev = document.getElementById('engineRev');
 const crashAudio = document.getElementById('crashAudio');
-const engineLoop = document.getElementById('engineLoop');
-const gameoverEl = document.getElementById('gameover');
+const gameoverModal = document.getElementById('gameover');
 const finalScore = document.getElementById('finalScore');
 const reBtn = document.getElementById('reBtn');
 
@@ -124,7 +126,7 @@ function scaleCanvas(){
 window.addEventListener('resize', scaleCanvas);
 scaleCanvas();
 
-/* Game variables */
+/* Game state */
 let player = { x: 190, y: 560, w: 40, h: 70, speed: 6 };
 let enemies = [];
 let keys = {};
@@ -134,60 +136,11 @@ let baseSpeed = 3;
 let speed = baseSpeed;
 let tick = 0;
 let running = false;
-let audioAllowed = false;
-let laneX = [60,130,200,270]; // lanes
 let lastSpawn = 0;
+let laneX = [60,130,200,270];
 
-/* WebAudio for engine pitch control (optional, fallback to HTML audio if WebAudio blocked) */
-let audioCtx = null, engineGain = null, engineOsc = null, engineFilter = null;
-function initWebAudio(){
-  if (audioCtx) return;
-  try{
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    // create oscillator for engine-like hum (synth) and a bit of noise for character
-    engineOsc = audioCtx.createOscillator();
-    engineOsc.type = 'sawtooth';
-    engineFilter = audioCtx.createBiquadFilter();
-    engineFilter.type = 'lowpass';
-    engineFilter.frequency.value = 600;
-    engineGain = audioCtx.createGain();
-    engineGain.gain.value = 0; // start silent
-    engineOsc.connect(engineFilter);
-    engineFilter.connect(engineGain);
-    engineGain.connect(audioCtx.destination);
-    engineOsc.start();
-  }catch(e){
-    console.warn('WebAudio init failed, will use HTML <audio> fallback', e);
-    audioCtx = null;
-  }
-}
-
-/* Start audio (on user gesture) */
-function enableAudio(){
-  if (audioAllowed) return;
-  audioAllowed = true;
-  // WebAudio
-  initWebAudio();
-  if (audioCtx) {
-    // ramp to small gain when moving
-    engineGain.gain.setValueAtTime(0, audioCtx.currentTime);
-  } else {
-    // fallback: play <audio> loop
-    engineLoop.currentTime = 0;
-    engineLoop.volume = 0.25;
-    engineLoop.play().catch(()=>{/*ignored*/});
-  }
-}
-
-/* Spawn enemy car */
-function spawnEnemy(){
-  const lane = laneX[Math.floor(Math.random()*laneX.length)];
-  const colors = ['#e74c3c','#f39c12','#3498db','#9b59b6','#2ecc71'];
-  enemies.push({ x: lane - 20, y: -120, w: 40, h: 80, color: colors[Math.floor(Math.random()*colors.length)], passed:false });
-}
-
-/* Draw helpers */
-function roundedRect(x,y,w,h,r,fill=true){
+/* Helper: rounded rect */
+function roundedRect(x,y,w,h,r){
   ctx.beginPath();
   ctx.moveTo(x+r,y);
   ctx.arcTo(x+w,y,x+w,y+h,r);
@@ -195,41 +148,40 @@ function roundedRect(x,y,w,h,r,fill=true){
   ctx.arcTo(x,y+h,x,y,r);
   ctx.arcTo(x,y,x+r,y,r);
   ctx.closePath();
-  if (fill) ctx.fill();
 }
 
-/* Draw scene */
+/* spawn enemy car */
+function spawnEnemy(){
+  const lane = laneX[Math.floor(Math.random()*laneX.length)];
+  const colors = ['#e74c3c','#f39c12','#3498db','#9b59b6','#2ecc71'];
+  enemies.push({ x: lane - 20, y: -120, w: 40, h: 80, color: colors[Math.floor(Math.random()*colors.length)], passed:false });
+}
+
+/* collision test */
+function overlap(a,b){
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+/* draw scene */
 let roadOffset = 0;
 function drawScene(){
-  // sky gradient
+  // sky
   const sky = ctx.createLinearGradient(0,0,0,H*0.28);
-  sky.addColorStop(0,'#071126');
-  sky.addColorStop(1,'#00141c');
-  ctx.fillStyle = sky;
-  ctx.fillRect(0,0,W,H);
+  sky.addColorStop(0,'#071126'); sky.addColorStop(1,'#00141c');
+  ctx.fillStyle = sky; ctx.fillRect(0,0,W,H);
 
   // sidewalks
-  ctx.fillStyle = '#0f1724';
-  ctx.fillRect(0,80,40,H-160);
-  ctx.fillRect(W-40,80,40,H-160);
+  ctx.fillStyle = '#0f1724'; ctx.fillRect(0,80,40,H-160); ctx.fillRect(W-40,80,40,H-160);
 
   // road
-  ctx.fillStyle = '#2b2b2b';
-  ctx.fillRect(40,80,W-80,H-160);
+  ctx.fillStyle = '#2b2b2b'; ctx.fillRect(40,80,W-80,H-160);
 
-  // lanes separators
-  ctx.strokeStyle = '#999';
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.moveTo(130,80);
-  ctx.lineTo(130,H-80);
-  ctx.moveTo(W-130,80);
-  ctx.lineTo(W-130,H-80);
-  ctx.stroke();
+  // lane separators
+  ctx.strokeStyle = '#999'; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(130,80); ctx.lineTo(130,H-80); ctx.moveTo(W-130,80); ctx.lineTo(W-130,H-80); ctx.stroke();
 
   // moving dashed center line
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth = 3;
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
   for (let y = - (roadOffset % 40); y < H; y += 40) {
     ctx.beginPath();
     ctx.moveTo(W/2 - 2, 80 + y);
@@ -237,117 +189,73 @@ function drawScene(){
     ctx.stroke();
   }
   roadOffset += speed;
-
-  // buildings parallax tweak (CSS layers rotated earlier)
 }
 
-/* Draw player car */
+/* draw player */
 function drawPlayer(){
-  ctx.save();
   roundedRect(player.x, player.y, player.w, player.h, 8);
-  ctx.fillStyle = '#00ffcc';
-  ctx.fill();
-  ctx.fillStyle = 'rgba(0,0,0,0.12)';
-  ctx.fillRect(player.x + 6, player.y + 10, player.w - 12, 22);
-  // wheels
-  ctx.fillStyle = '#111';
-  ctx.fillRect(player.x + 6, player.y + player.h - 10, 10, 6);
-  ctx.fillRect(player.x + player.w - 16, player.y + player.h - 10, 10, 6);
-  ctx.restore();
+  ctx.fillStyle = '#00ffcc'; ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.12)'; ctx.fillRect(player.x + 6, player.y + 10, player.w - 12, 22);
+  ctx.fillStyle = '#111'; ctx.fillRect(player.x + 6, player.y + player.h - 10, 10, 6); ctx.fillRect(player.x + player.w - 16, player.y + player.h - 10, 10, 6);
 }
 
-/* Draw enemies */
+/* draw enemies */
 function drawEnemies(){
   for (let i = enemies.length - 1; i >= 0; i--){
     const e = enemies[i];
     roundedRect(e.x, e.y, e.w, e.h, 6);
-    ctx.fillStyle = e.color;
-    ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.12)';
-    ctx.fillRect(e.x + 5, e.y + 10, e.w - 10, 18);
-    ctx.fillStyle = '#111';
-    ctx.fillRect(e.x + 6, e.y + e.h - 10, 10, 6);
-    ctx.fillRect(e.x + e.w - 16, e.y + e.h - 10, 10, 6);
+    ctx.fillStyle = e.color; ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(e.x + 5, e.y + 10, e.w - 10, 18);
+    ctx.fillStyle = '#111'; ctx.fillRect(e.x + 6, e.y + e.h - 10, 10, 6); ctx.fillRect(e.x + e.w - 16, e.y + e.h - 10, 10, 6);
   }
 }
 
-/* Collision check */
-function overlap(a,b){
-  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
-}
-
-/* End game */
+/* end game */
 function endGame(){
   running = false;
-  // stop engine sound
-  if (audioCtx && engineGain) {
-    engineGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.05);
-  } else {
-    try{ engineLoop.pause(); engineLoop.currentTime = 0; } catch(e){}
-  }
-  // play crash
-  crashAudio.currentTime = 0; crashAudio.play().catch(()=>{});
+  // stop engine idle
+  try{ engineIdle.pause(); engineIdle.currentTime = 0; } catch(e){}
+  // crash sound
+  try{ crashAudio.currentTime = 0; crashAudio.play().catch(()=>{}); } catch(e){}
   finalScore.textContent = 'Ball: ' + score;
-  gameoverEl.style.display = 'flex';
+  gameoverModal.style.display = 'flex';
 }
 
-/* Main loop */
+/* main loop */
 function loop(){
   if (!running) return;
   tick++;
-  // input: keyboard or mobile buttons
+
+  // input
   if ((keys['ArrowLeft'] || movingLeft) && player.x > 40) player.x -= player.speed;
   if ((keys['ArrowRight'] || movingRight) && player.x < W - player.w - 40) player.x += player.speed;
 
-  // spawn occasionally
-  if (Date.now() - lastSpawn > 700 && Math.random() < 0.035) {
-    spawnEnemy(); lastSpawn = Date.now();
-  }
+  // spawn - ensure not too frequent
+  if (Date.now() - lastSpawn > 600 && Math.random() < 0.04) { spawnEnemy(); lastSpawn = Date.now(); }
 
   // update enemies
   for (let i = enemies.length - 1; i >= 0; i--){
     const e = enemies[i];
     e.y += speed;
-    if (!e.passed && e.y > H) {
-      e.passed = true;
-      enemies.splice(i,1);
-      score++; hudScore.textContent = score;
-    } else {
-      // collision
-      if (overlap(player, e)) {
-        endGame();
-        return;
-      }
+    if (!e.passed && e.y > H) { e.passed = true; enemies.splice(i,1); score++; hudScore.textContent = score; }
+    else {
+      if (overlap(player, e)) { endGame(); return; }
     }
   }
 
-  // difficulty increase every ~7 seconds
-  if (tick % Math.floor(60 * 7) === 0) {
+  // difficulty: every 10 seconds increase speed
+  // use tick with ~60fps assumption
+  if (tick % Math.floor(60 * 10) === 0) {
     speed = Math.min(12, speed + 0.6);
     hudSpd.textContent = speed.toFixed(1);
-    // small CSS parallax tweak for layers
+    // play rev sound softly when speed increases
+    try{ engineRev.currentTime = 0; engineRev.play().catch(()=>{}); } catch(e){}
+    // slightly speed up engine idle (playbackRate) for better feel
+    try{ engineIdle.playbackRate = 1 + (speed - baseSpeed) * 0.06; } catch(e){}
+    // nudge parallax layers
     document.querySelectorAll('#city .layer').forEach((el, idx) => {
       el.style.transform = `translate3d(-50%,-${60 - idx*6}%, ${-300 + idx*120}px) rotateY(${(tick%100)/50 * (idx-1)}deg)`;
     });
-    // if using webaudio, raise filter pitch
-    if (audioCtx && engineFilter) {
-      engineFilter.frequency.linearRampToValueAtTime(600 + (speed-3)*120, audioCtx.currentTime + 0.2);
-      engineOsc.detune.setValueAtTime((speed-3)*30, audioCtx.currentTime);
-    } else {
-      // fallback: speed up audio playbackRate slightly
-      engineLoop.playbackRate = 1 + (speed-3)*0.06;
-    }
-  }
-
-  // update engine sound gain if moving
-  if (audioCtx && engineGain) {
-    const moving = keys['ArrowLeft'] || keys['ArrowRight'] || movingLeft || movingRight;
-    const target = moving ? 0.12 + (speed-3)*0.02 : 0.02;
-    engineGain.gain.linearRampToValueAtTime(target, audioCtx.currentTime + 0.08);
-  } else {
-    // HTML audio: slightly change volume/playbackRate based on movement
-    engineLoop.volume = (movingLeft || movingRight || keys['ArrowLeft'] || keys['ArrowRight']) ? 0.35 : 0.18;
-    engineLoop.playbackRate = 1 + (speed-3)*0.06;
   }
 
   // render
@@ -359,17 +267,17 @@ function loop(){
   requestAnimationFrame(loop);
 }
 
-/* Controls: keyboard */
-document.addEventListener('keydown', e => { keys[e.key] = true; if (e.key===' '){ /*prevent page*/ e.preventDefault(); }});
+/* controls: keyboard */
+document.addEventListener('keydown', e => { keys[e.key] = true; });
 document.addEventListener('keyup', e => { keys[e.key] = false; });
 
-/* Mobile controls (touch) */
+/* mobile touch buttons */
 leftBtn.addEventListener('touchstart', e => { e.preventDefault(); movingLeft = true; });
 leftBtn.addEventListener('touchend', e => { e.preventDefault(); movingLeft = false; });
 rightBtn.addEventListener('touchstart', e => { e.preventDefault(); movingRight = true; });
 rightBtn.addEventListener('touchend', e => { e.preventDefault(); movingRight = false; });
 
-/* Swipe support */
+/* swipe on canvas */
 let touchStartX = null;
 canvas.addEventListener('touchstart', e => {
   if (!e.touches || !e.touches[0]) return;
@@ -378,86 +286,54 @@ canvas.addEventListener('touchstart', e => {
 canvas.addEventListener('touchmove', e => {
   if (!e.touches || !e.touches[0] || touchStartX === null) return;
   const dx = e.touches[0].clientX - touchStartX;
-  // if swipe left/right large, move player accordingly temporarily
   if (dx < -20) { movingLeft = true; movingRight = false; }
   else if (dx > 20) { movingRight = true; movingLeft = false; }
 });
 canvas.addEventListener('touchend', e => { movingLeft = false; movingRight = false; touchStartX = null; });
 
-/* Desktop mouse: click left/right half of canvas to move */
+/* pointer for desktop/tap: press left/right half */
 canvas.addEventListener('pointerdown', e => {
   const rect = canvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
   if (x < rect.width / 2) movingLeft = true; else movingRight = true;
 });
-canvas.addEventListener('pointerup', e => { movingLeft = false; movingRight = false; });
+canvas.addEventListener('pointerup', () => { movingLeft = false; movingRight = false; });
 
-/* START button: enable audio + show controls + start game */
+/* START: enable audio + show controls + start loop */
 startBtn.addEventListener('click', async () => {
-  // enable audio
-  enableAudio();
-  if (audioCtx) {
-    // resume context on gesture
-    try{ await audioCtx.resume(); } catch(e){}
-    // ramp engine filter and gain initial values
-    engineFilter.frequency.setValueAtTime(600, audioCtx.currentTime);
-    engineGain.gain.setValueAtTime(0.02, audioCtx.currentTime);
-  } else {
-    try{ engineLoop.currentTime = 0; await engineLoop.play(); } catch(e){}
-  }
+  // allow audio: play engine idle (user gesture)
+  try{
+    engineIdle.currentTime = 0;
+    engineIdle.volume = 0.28;
+    await engineIdle.play();
+  }catch(e){ /* ignore */ }
 
   overlay.style.display = 'none';
-  controls.style.display = 'flex';
-  controls.style.pointerEvents = 'auto';
+  // show mobile controls on small screens
+  if (window.innerWidth <= 720) { controls.style.display = 'flex'; controls.style.pointerEvents = 'auto'; } else { controls.style.display = 'none'; }
   running = true;
   tick = 0;
   lastSpawn = Date.now();
+  // ensure playbackRate baseline
+  try{ engineIdle.playbackRate = 1; } catch(e){}
   loop();
 });
 
-/* Restart */
+/* RESTART */
 reBtn.addEventListener('click', () => {
-  // reset
-  enemies = [];
-  score = 0; hudScore.textContent = 0;
-  speed = baseSpeed; hudSpd.textContent = speed.toFixed(1);
-  gameoverEl.style.display = 'none';
-  overlay.style.display = 'none';
-  running = true;
-  tick = 0;
-  lastSpawn = Date.now();
-  // restart engine sound
-  if (audioCtx && engineGain) engineGain.gain.setValueAtTime(0.02, audioCtx.currentTime);
-  else { try{ engineLoop.play(); }catch(e){} }
-  loop();
+  enemies = []; score = 0; hudScore.textContent = 0; speed = baseSpeed; hudSpd.textContent = speed.toFixed(1);
+  gameoverModal.style.display = 'none'; overlay.style.display = 'none';
+  try{ engineIdle.currentTime = 0; engineIdle.play().catch(()=>{}); } catch(e){}
+  running = true; tick = 0; lastSpawn = Date.now(); loop();
 });
 
-/* Initial demo parallax nudge */
+/* initial parallax transforms */
 document.querySelectorAll('#city .layer').forEach((el, idx) => {
   el.style.transform = `translate3d(-50%,-${60 - idx*6}%, ${-300 + idx*120}px)`;
 });
 
-/* Safety: if WebAudio not available, ensure engineLoop volume tiny and looped */
-engineLoop.volume = 0.18;
-engineLoop.loop = true;
-
-/* Start scaled canvas size */
+/* ensure canvas scaled */
 scaleCanvas();
-
-/* Show mobile controls on small screens */
-if (window.innerWidth <= 720) {
-  controls.style.display = 'flex';
-  controls.style.pointerEvents = 'auto';
-} else {
-  controls.style.display = 'none';
-}
-
-/* Hint: clicking anywhere starts audio in some browsers (resumes audioCtx) */
-document.addEventListener('pointerdown', function ensureAudioOnce(){
-  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-  document.removeEventListener('pointerdown', ensureAudioOnce);
-});
-
 </script>
 </body>
 </html>
