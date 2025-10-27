@@ -1,190 +1,343 @@
 <!doctype html>
 <html lang="uz">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>🎨 Rangni Top!</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Komandir — Bayroqni egallash</title>
 <style>
-  body {
-    font-family: 'Segoe UI', sans-serif;
-    background: radial-gradient(circle at top, #1a2a6c, #b21f1f, #fdbb2d);
-    height: 100vh;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    text-align: center;
+  :root{
+    --bg1:#0b1220; --panel:#071427; --accent:#7dd3fc; --accent2:#60a5fa;
+    --danger:#ff6b6b; --muted:#9aa8bd;
   }
-
-  h1 {
-    font-size: 2em;
-    margin-bottom: 10px;
-    text-shadow: 0 0 10px black;
-  }
-
-  #colorWord {
-    font-size: 3em;
-    font-weight: bold;
-    margin: 30px 0;
-    transition: 0.3s;
-  }
-
-  .btns {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 15px;
-    width: 90%;
-    max-width: 500px;
-  }
-
-  button {
-    padding: 15px;
-    font-size: 18px;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: 0.2s;
-  }
-
-  button:hover {
-    transform: scale(1.1);
-  }
-
-  .stats {
-    margin-top: 20px;
-    font-size: 18px;
-  }
-
-  .gameover {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.85);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    font-size: 28px;
-    visibility: hidden;
-    opacity: 0;
-    transition: opacity 0.4s;
-  }
-
-  .gameover.show {
-    visibility: visible;
-    opacity: 1;
-  }
-
-  @media (max-width: 500px) {
-    h1 { font-size: 1.5em; }
-    #colorWord { font-size: 2.2em; }
-  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,var(--bg1),#071a2b);color:#e6f0ff;padding:18px}
+  .wrap{width:100%;max-width:980px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:16px;box-shadow:0 8px 30px rgba(2,6,23,.7)}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  h1{font-size:20px;margin:0}
+  .controls{display:flex;gap:8px;align-items:center}
+  .btn{background:var(--accent);color:#042033;border:none;padding:8px 12px;border-radius:8px;font-weight:700;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.05);color:var(--muted)}
+  main{display:grid;grid-template-columns:1fr 260px;gap:14px;margin-top:12px}
+  .field{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));border-radius:10px;padding:10px;position:relative;overflow:hidden}
+  .battlefield{width:100%;height:480px;border-radius:8px;background:linear-gradient(180deg,#08334a,#042034);position:relative;overflow:hidden}
+  /* base */
+  .base{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);width:120px;height:72px;border-radius:8px;background:linear-gradient(180deg,#102a3a,#05202b);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;box-shadow:0 8px 20px rgba(0,0,0,.6)}
+  .base span{font-size:18px}
+  /* flag */
+  .flag{position:absolute;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;transform:translate(-50%,-50%);transition:transform .18s}
+  .flag:active{transform:translate(-50%,-50%) scale(.95)}
+  /* soldier */
+  .soldier{position:absolute;width:42px;height:42px;border-radius:6px;background:linear-gradient(135deg,#9be7ff,#60a5fa);display:flex;align-items:center;justify-content:center;font-size:22px;color:#02263a;transition:transform 0.6s linear;}
+  /* right panel */
+  .panel{padding:8px;background:linear-gradient(180deg,#061226,#071226);border-radius:8px;display:flex;flex-direction:column;gap:10px}
+  .stat{display:flex;justify-content:space-between;align-items:center;padding:8px;background:rgba(255,255,255,0.02);border-radius:8px;font-weight:700}
+  .muted{color:var(--muted);font-size:13px}
+  .gameover{position:absolute;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;visibility:hidden;opacity:0;transition:opacity .2s}
+  .gameover.show{visibility:visible;opacity:1}
+  footer{margin-top:12px;text-align:center;color:var(--muted);font-size:13px}
+  @media (max-width:880px){main{grid-template-columns:1fr;}.panel{order:2}}
+  @media (max-width:420px){.battlefield{height:380px}.base{width:100px;height:60px}.flag{width:38px;height:38px;font-size:24px}}
 </style>
 </head>
 <body>
+<div class="wrap" role="application" aria-label="Komandir o'yini">
+  <header>
+    <div>
+      <h1>Komandir — Bayroqni egallash</h1>
+      <div class="muted">Bosib bayroqni egallasang — askar yuboriladi. 5 miss → Game Over.</div>
+    </div>
+    <div class="controls">
+      <button id="start" class="btn">Start</button>
+      <button id="pause" class="btn ghost">Pause</button>
+      <button id="reset" class="btn ghost">Reset</button>
+    </div>
+  </header>
 
-<h1>🎨 Rangni Top!</h1>
-<div id="colorWord">RED</div>
+  <main>
+    <section class="field">
+      <div class="battlefield" id="field" aria-live="polite">
+        <div class="base" id="base"><span>BASE</span></div>
+        <div class="gameover" id="gameover">
+          <div style="font-size:26px;font-weight:900;color:var(--danger)">❌ GAME OVER ❌</div>
+          <div id="finalText" style="font-weight:700"></div>
+          <button id="tryAgain" class="btn">Qayta urinish</button>
+        </div>
+      </div>
+      <footer>Yaratuvchi: Shodiyor — demo</footer>
+    </section>
 
-<div class="btns" id="buttons"></div>
-
-<div class="stats">
-  Ball: <span id="score">0</span> | Xato: <span id="mistakes">0</span>
-</div>
-
-<div class="gameover" id="gameover">
-  ❌ GAME OVER ❌  
-  <br><br>
-  <span id="finalScore"></span>
-  <br><br>
-  <button onclick="restart()">Qayta o‘ynash</button>
+    <aside class="panel" aria-hidden="false">
+      <div class="stat"><span>Ball</span><span id="score">0</span></div>
+      <div class="stat"><span>Eng yuqori</span><span id="high">0</span></div>
+      <div class="stat"><span>O'tkazilgan</span><span id="miss">0</span></div>
+      <div class="stat"><span>Bayroq tezligi</span><span id="spawnSpeed">1500ms</span></div>
+      <div class="muted">Ko'rsatma: Bayroq paydo bo'lganda unga bosing. Ba'zi bayroqlar tezroqlari yoki ko'proq ball beradi.</div>
+    </aside>
+  </main>
 </div>
 
 <script>
-const colors = ["RED", "GREEN", "BLUE", "YELLOW", "PURPLE", "ORANGE"];
-const colorValues = {
-  RED: "#ff3b3b",
-  GREEN: "#3cff5a",
-  BLUE: "#3bb6ff",
-  YELLOW: "#ffe93b",
-  PURPLE: "#d43bff",
-  ORANGE: "#ff913b"
-};
+(() => {
+  // Sozlamalar
+  const SETTINGS = {
+    maxMiss: 5,
+    initialSpawn: 1500, // ms
+    minSpawn: 600,
+    spawnDecrease: 100, // har 10 soniyada kamayadi
+    difficultyStepTime: 10000, // ms
+    flagTimeoutFactor: 0.95 // flag qancha vaqt turadi (ms) = spawnTime * factor
+  };
 
-let score = 0;
-let mistakes = 0;
-let delay = 1500;
-let timer;
-let correctColor;
+  // DOM
+  const field = document.getElementById('field');
+  const base = document.getElementById('base');
+  const startBtn = document.getElementById('start');
+  const pauseBtn = document.getElementById('pause');
+  const resetBtn = document.getElementById('reset');
+  const tryAgain = document.getElementById('tryAgain');
+  const scoreEl = document.getElementById('score');
+  const highEl = document.getElementById('high');
+  const missEl = document.getElementById('miss');
+  const spawnSpeedEl = document.getElementById('spawnSpeed');
+  const gameoverEl = document.getElementById('gameover');
+  const finalText = document.getElementById('finalText');
 
-const colorWord = document.getElementById("colorWord");
-const buttonsContainer = document.getElementById("buttons");
-const scoreEl = document.getElementById("score");
-const mistakesEl = document.getElementById("mistakes");
-const gameover = document.getElementById("gameover");
-const finalScore = document.getElementById("finalScore");
+  // holat
+  let score = 0;
+  let high = Number(localStorage.getItem('commander_high') || 0);
+  let miss = 0;
+  let spawnTime = SETTINGS.initialSpawn;
+  let spawnTimer = null;
+  let difficultyTimer = null;
+  let running = false;
+  let activeFlags = new Map(); // id -> timeout
 
-// Tugmalarni yaratamiz
-for (let name of colors) {
-  const btn = document.createElement("button");
-  btn.textContent = name;
-  btn.style.background = colorValues[name];
-  btn.onclick = () => checkAnswer(name);
-  buttonsContainer.appendChild(btn);
-}
-
-function nextRound() {
-  const textColor = colors[Math.floor(Math.random() * colors.length)];
-  correctColor = colors[Math.floor(Math.random() * colors.length)];
-
-  colorWord.textContent = textColor;
-  colorWord.style.color = colorValues[correctColor];
-
-  timer = setTimeout(() => {
-    mistakes++;
-    updateUI();
-    if (mistakes >= 7) return gameOver();
-    nextRound();
-  }, delay);
-}
-
-function checkAnswer(choice) {
-  clearTimeout(timer);
-  if (choice === correctColor) {
-    score++;
-    if (delay > 600) delay -= 100; // tezlashadi
-  } else {
-    mistakes++;
-    if (mistakes >= 7) return gameOver();
-  }
-  updateUI();
-  nextRound();
-}
-
-function updateUI() {
+  highEl.textContent = high;
   scoreEl.textContent = score;
-  mistakesEl.textContent = mistakes;
-}
+  missEl.textContent = miss;
+  spawnSpeedEl.textContent = spawnTime + 'ms';
 
-function gameOver() {
-  clearTimeout(timer);
-  gameover.classList.add("show");
-  finalScore.textContent = `Sizning ballingiz: ${score}`;
-}
+  // Helper: random position (x,y) ichida battlefield, bayroq joylashuvi
+  function randomPos() {
+    const rect = field.getBoundingClientRect();
+    // keep area above base (y at least 60px from bottom)
+    const padding = 20;
+    const x = Math.random() * (rect.width - 80) + padding;
+    const y = Math.random() * (rect.height - 180) + padding;
+    return { x, y };
+  }
 
-function restart() {
-  score = 0;
-  mistakes = 0;
-  delay = 1500;
-  gameover.classList.remove("show");
-  updateUI();
-  nextRound();
-}
+  // Create flag
+  let idCounter = 0;
+  function spawnFlag(special=false) {
+    if (!running) return;
+    const id = ++idCounter;
+    const { x, y } = randomPos();
+    const el = document.createElement('div');
+    el.className = 'flag';
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    el.dataset.id = id;
+    // special bayroq: ko'proq ball yoki tezroq timeout
+    if (special) {
+      el.textContent = '🏁'; // special
+      el.dataset.points = '2';
+      el.dataset.special = '1';
+    } else {
+      el.textContent = '🚩';
+      el.dataset.points = '1';
+      el.dataset.special = '0';
+    }
+    field.appendChild(el);
 
-nextRound();
+    // click handler: yubor askar
+    el.addEventListener('pointerdown', () => {
+      if (!running) return;
+      captureFlag(id, el);
+    });
+
+    // set timeout: agar vaqt tugasa -> missed (faqat agar urilmagan bo'lsa)
+    const life = Math.max(500, spawnTime * SETTINGS.flagTimeoutFactor * (special ? 0.85 : 1));
+    const t = setTimeout(() => {
+      // agar element hali mavjud va urilmagan
+      if (field.contains(el)) {
+        el.remove();
+        activeFlags.delete(id);
+        missed();
+      }
+    }, life);
+    activeFlags.set(id, t);
+  }
+
+  // capture: animatsiya: soldier moves from base to flag, then score increase
+  function captureFlag(id, flagEl) {
+    // prevent double capture
+    if (!field.contains(flagEl)) return;
+    // remove timeout
+    const t = activeFlags.get(id);
+    if (t) clearTimeout(t);
+    activeFlags.delete(id);
+
+    // create soldier
+    const soldier = document.createElement('div');
+    soldier.className = 'soldier';
+    soldier.textContent = '🪖';
+    field.appendChild(soldier);
+
+    // compute base center and flag center positions relative to field
+    const fRect = field.getBoundingClientRect();
+    const baseRect = base.getBoundingClientRect();
+    const flagRect = flagEl.getBoundingClientRect();
+    const startX = baseRect.left + baseRect.width/2 - fRect.left - 21; // soldier half width
+    const startY = baseRect.top + baseRect.height/2 - fRect.top - 21;
+    const endX = flagRect.left + flagRect.width/2 - fRect.left - 21;
+    const endY = flagRect.top + flagRect.height/2 - fRect.top - 21;
+
+    soldier.style.left = startX + 'px';
+    soldier.style.top = startY + 'px';
+    // force reflow
+    void soldier.offsetWidth;
+
+    // animate using transform
+    soldier.style.transition = 'transform 0.6s linear';
+    const dx = endX - startX;
+    const dy = endY - startY;
+    soldier.style.transform = `translate(${dx}px, ${dy}px) scale(1.05)`;
+
+    // after arrival
+    setTimeout(() => {
+      // explosion-like pop
+      soldier.style.transition = 'transform .18s ease-out, opacity .3s';
+      soldier.style.transform += ' scale(0.6)';
+      soldier.style.opacity = '0';
+      setTimeout(()=> soldier.remove(), 300);
+      // remove flag and add score
+      if (field.contains(flagEl)) flagEl.remove();
+      // update score
+      const pts = Number(flagEl.dataset.points || 1);
+      score += pts;
+      scoreEl.textContent = score;
+      if (score > high) {
+        high = score;
+        localStorage.setItem('commander_high', String(high));
+        highEl.textContent = high;
+      }
+    }, 650);
+  }
+
+  function missed() {
+    miss++;
+    missEl.textContent = miss;
+    if (miss >= SETTINGS.maxMiss) {
+      endGame();
+    }
+  }
+
+  // spawn loop
+  function startSpawning() {
+    if (spawnTimer) clearInterval(spawnTimer);
+    spawnTimer = setInterval(() => {
+      // sometimes spawn special flag
+      const special = Math.random() < 0.12; // 12% chance
+      spawnFlag(special);
+    }, spawnTime);
+  }
+
+  // difficulty increase
+  function startDifficulty() {
+    if (difficultyTimer) clearInterval(difficultyTimer);
+    difficultyTimer = setInterval(() => {
+      if (spawnTime > SETTINGS.minSpawn) {
+        spawnTime = Math.max(SETTINGS.minSpawn, spawnTime - SETTINGS.spawnDecrease);
+        spawnSpeedEl.textContent = spawnTime + 'ms';
+        // restart spawn loop with new speed
+        startSpawning();
+      }
+    }, SETTINGS.difficultyStepTime);
+  }
+
+  function startGame() {
+    if (running) return;
+    // reset
+    running = true;
+    score = 0; miss = 0;
+    spawnTime = SETTINGS.initialSpawn;
+    scoreEl.textContent = score; missEl.textContent = miss; spawnSpeedEl.textContent = spawnTime + 'ms';
+    gameoverEl.classList.remove('show');
+    // clear any existing flags/timeouts
+    activeFlags.forEach(t => clearTimeout(t));
+    activeFlags.clear();
+    // remove leftover flags/soldiers
+    field.querySelectorAll('.flag, .soldier').forEach(el => el.remove());
+
+    startSpawning();
+    startDifficulty();
+  }
+
+  function pauseGame() {
+    if (!running) return;
+    running = false;
+    clearInterval(spawnTimer); clearInterval(difficultyTimer);
+    activeFlags.forEach(t => clearTimeout(t)); // freeze: remove timeouts to avoid misses during pause
+    // leave current flags on field (they won't time out)
+  }
+
+  function endGame() {
+    running = false;
+    clearInterval(spawnTimer); clearInterval(difficultyTimer);
+    // clear timeouts for flags
+    activeFlags.forEach(t => clearTimeout(t));
+    activeFlags.clear();
+    // show game over
+    finalText.textContent = `Sizning ballingiz: ${score}`;
+    gameoverEl.classList.add('show');
+  }
+
+  function resetAll() {
+    running = false;
+    clearInterval(spawnTimer); clearInterval(difficultyTimer);
+    activeFlags.forEach(t => clearTimeout(t));
+    activeFlags.clear();
+    field.querySelectorAll('.flag, .soldier').forEach(el => el.remove());
+    score = 0; miss = 0;
+    scoreEl.textContent = score; missEl.textContent = miss;
+    spawnTime = SETTINGS.initialSpawn; spawnSpeedEl.textContent = spawnTime + 'ms';
+    gameoverEl.classList.remove('show');
+  }
+
+  // controls
+  startBtn.addEventListener('click', startGame);
+  pauseBtn.addEventListener('click', () => {
+    if (running) pauseGame(); else startGame();
+  });
+  resetBtn.addEventListener('click', resetAll);
+  tryAgain.addEventListener('click', () => {
+    resetAll();
+    startGame();
+  });
+
+  // accessibility: tap battlefield to spawn a flag manually (for demo)
+  field.addEventListener('dblclick', (e) => {
+    // spawn near click (dev tool)
+    const rect = field.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    // create quick flag with given pos
+    const id = ++idCounter;
+    const el = document.createElement('div');
+    el.className = 'flag';
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    el.dataset.points = '1';
+    field.appendChild(el);
+    el.addEventListener('pointerdown', () => captureFlag(id, el));
+    const t = setTimeout(() => { if (field.contains(el)) { el.remove(); missed(); } }, spawnTime * SETTINGS.flagTimeoutFactor);
+    activeFlags.set(id, t);
+  });
+
+  // initial demo: spawn a flag so it's not empty
+  spawnFlag();
+})();
 </script>
-
 </body>
 </html>
