@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>⭐ Yulduzni Ur!</title>
+<style>
+  body {
+    margin: 0;
+    font-family: sans-serif;
+    background: linear-gradient(180deg, #0b132b, #1c2541);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    text-align: center;
+  }
+
+  h1 { margin-bottom: 10px; }
+
+  .controls { margin-bottom: 15px; }
+
+  button {
+    background: #5bc0be;
+    border: none;
+    padding: 10px 16px;
+    margin: 0 4px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s;
+  }
+  button:hover { background: #45a29e; }
+
+  .board {
+    display: grid;
+    grid-template-columns: repeat(4, 80px);
+    gap: 10px;
+  }
+
+  .cell {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+  }
+
+  .mole {
+    position: absolute;
+    inset: 10px;
+    background: gold;
+    color: #111;
+    border-radius: 10px;
+    font-size: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateY(120%);
+    transition: transform 0.25s;
+  }
+  .mole.up { transform: translateY(0%); }
+
+  .info {
+    margin-top: 15px;
+    font-size: 18px;
+  }
+
+  .gameover {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.85);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: bold;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity .3s;
+    flex-direction: column;
+  }
+  .gameover.show {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  @media (max-width: 600px) {
+    .board { grid-template-columns: repeat(3, 80px); }
+  }
+  @media (max-width: 400px) {
+    .board { grid-template-columns: repeat(2, 80px); }
+  }
+</style>
+</head>
+<body>
+
+<h1>⭐ Yulduzni Ur!</h1>
+<div class="controls">
+  <button id="startBtn">Boshlash</button>
+  <button id="stopBtn">To‘xtatish</button>
+  <button id="resetBtn">Qayta</button>
+</div>
+
+<div class="board" id="board"></div>
+<div class="info">
+  Ball: <span id="score">0</span> | Eng yuqori: <span id="high">0</span><br>
+  Tezlik: <span id="speed">0.8</span>s | O‘tkazib yuborilgan: <span id="missed">0</span>
+</div>
+
+<div class="gameover" id="gameover">
+  ❌ GAME OVER ❌
+  <br><br>
+  <span id="finalScore"></span>
+  <br><br>
+  <button onclick="resetGame()">Qayta o‘ynash</button>
+</div>
+
+<script>
+const board = document.getElementById('board');
+const scoreEl = document.getElementById('score');
+const highEl = document.getElementById('high');
+const speedEl = document.getElementById('speed');
+const missedEl = document.getElementById('missed');
+const gameoverEl = document.getElementById('gameover');
+const finalScore = document.getElementById('finalScore');
+
+let score = 0;
+let missed = 0;
+let high = localStorage.getItem('highscore') || 0;
+let gameRunning = false;
+let speed = 800; // ms
+let moleTimer, speedTimer;
+
+highEl.textContent = high;
+
+// hujayralar yaratish
+for (let i = 0; i < 12; i++) {
+  const cell = document.createElement('div');
+  cell.classList.add('cell');
+  const mole = document.createElement('div');
+  mole.classList.add('mole');
+  mole.textContent = '★';
+  cell.appendChild(mole);
+  board.appendChild(cell);
+
+  cell.addEventListener('click', () => {
+    if (mole.classList.contains('up')) {
+      score++;
+      mole.classList.remove('up');
+      mole.dataset.hit = "true"; // urilgan deb belgilanadi
+      scoreEl.textContent = score;
+    }
+  });
+}
+
+const moles = document.querySelectorAll('.mole');
+
+function randomMole() {
+  const index = Math.floor(Math.random() * moles.length);
+  const mole = moles[index];
+  mole.classList.add('up');
+  mole.dataset.hit = "false";
+
+  setTimeout(() => {
+    // faqat urilmagan bo'lsa xato qo'shiladi
+    if (mole.classList.contains('up') && mole.dataset.hit === "false") {
+      mole.classList.remove('up');
+      missed++;
+      missedEl.textContent = missed;
+      if (missed >= 7) {
+        return gameOver();
+      }
+    } else {
+      mole.classList.remove('up');
+    }
+  }, speed * 0.9);
+}
+
+function updateSpeed() {
+  speedEl.textContent = (speed / 1000).toFixed(2);
+}
+
+function startGame() {
+  if (gameRunning) return;
+  gameRunning = true;
+  score = 0;
+  missed = 0;
+  scoreEl.textContent = 0;
+  missedEl.textContent = 0;
+  speed = 800;
+  updateSpeed();
+  gameoverEl.classList.remove('show');
+
+  moleTimer = setInterval(randomMole, speed);
+
+  // har 10 sekundda tezlashadi
+  speedTimer = setInterval(() => {
+    if (speed > 300) {
+      speed -= 100;
+      updateSpeed();
+      clearInterval(moleTimer);
+      moleTimer = setInterval(randomMole, speed);
+    }
+  }, 10000);
+}
+
+function stopGame() {
+  gameRunning = false;
+  clearInterval(moleTimer);
+  clearInterval(speedTimer);
+  if (score > high) {
+    high = score;
+    localStorage.setItem('highscore', high);
+    highEl.textContent = high;
+  }
+}
+
+function gameOver() {
+  stopGame();
+  finalScore.textContent = `Sizning ballingiz: ${score}`;
+  gameoverEl.classList.add('show');
+}
+
+function resetGame() {
+  gameRunning = false;
+  missed = 0;
+  score = 0;
+  missedEl.textContent = 0;
+  scoreEl.textContent = 0;
+  speed = 800;
+  updateSpeed();
+  gameoverEl.classList.remove('show');
+}
+
+document.getElementById('startBtn').onclick = startGame;
+document.getElementById('stopBtn').onclick = stopGame;
+document.getElementById('resetBtn').onclick = resetGame;
+</script>
+
+</body>
+</html>
