@@ -3,341 +3,513 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Komandir — Bayroqni egallash</title>
+<title>🚗 Mashina Jangi — 3D shahar foni va tovush</title>
 <style>
   :root{
-    --bg1:#0b1220; --panel:#071427; --accent:#7dd3fc; --accent2:#60a5fa;
-    --danger:#ff6b6b; --muted:#9aa8bd;
+    --bg:#0b1220; --road:#2b2b2b; --lane:#dcdcdc;
+    --hud-bg: rgba(0,0,0,0.5);
   }
   *{box-sizing:border-box}
-  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,var(--bg1),#071a2b);color:#e6f0ff;padding:18px}
-  .wrap{width:100%;max-width:980px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:16px;box-shadow:0 8px 30px rgba(2,6,23,.7)}
-  header{display:flex;align-items:center;justify-content:space-between;gap:12px}
-  h1{font-size:20px;margin:0}
-  .controls{display:flex;gap:8px;align-items:center}
-  .btn{background:var(--accent);color:#042033;border:none;padding:8px 12px;border-radius:8px;font-weight:700;cursor:pointer}
-  .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.05);color:var(--muted)}
-  main{display:grid;grid-template-columns:1fr 260px;gap:14px;margin-top:12px}
-  .field{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));border-radius:10px;padding:10px;position:relative;overflow:hidden}
-  .battlefield{width:100%;height:480px;border-radius:8px;background:linear-gradient(180deg,#08334a,#042034);position:relative;overflow:hidden}
-  /* base */
-  .base{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);width:120px;height:72px;border-radius:8px;background:linear-gradient(180deg,#102a3a,#05202b);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;box-shadow:0 8px 20px rgba(0,0,0,.6)}
-  .base span{font-size:18px}
-  /* flag */
-  .flag{position:absolute;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;transform:translate(-50%,-50%);transition:transform .18s}
-  .flag:active{transform:translate(-50%,-50%) scale(.95)}
-  /* soldier */
-  .soldier{position:absolute;width:42px;height:42px;border-radius:6px;background:linear-gradient(135deg,#9be7ff,#60a5fa);display:flex;align-items:center;justify-content:center;font-size:22px;color:#02263a;transition:transform 0.6s linear;}
-  /* right panel */
-  .panel{padding:8px;background:linear-gradient(180deg,#061226,#071226);border-radius:8px;display:flex;flex-direction:column;gap:10px}
-  .stat{display:flex;justify-content:space-between;align-items:center;padding:8px;background:rgba(255,255,255,0.02);border-radius:8px;font-weight:700}
-  .muted{color:var(--muted);font-size:13px}
-  .gameover{position:absolute;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;visibility:hidden;opacity:0;transition:opacity .2s}
-  .gameover.show{visibility:visible;opacity:1}
-  footer{margin-top:12px;text-align:center;color:var(--muted);font-size:13px}
-  @media (max-width:880px){main{grid-template-columns:1fr;}.panel{order:2}}
-  @media (max-width:420px){.battlefield{height:380px}.base{width:100px;height:60px}.flag{width:38px;height:38px;font-size:24px}}
+  body{margin:0;overflow:hidden;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#041224,#07102a);color:#fff}
+  /* city background layers */
+  #city {
+    position:fixed;
+    inset:0;
+    z-index:0;
+    perspective:1000px;
+    overflow:hidden;
+    pointer-events:none;
+  }
+  .layer {
+    position:absolute;
+    left:50%;
+    transform-style:preserve-3d;
+    top:50%;
+    transform-origin:center;
+    will-change:transform;
+  }
+  /* Far buildings */
+  .layer.far{
+    width:1600px;height:500px;
+    transform:translate3d(-50%,-60%, -300px) scale(1.1);
+    background:
+      linear-gradient(180deg, rgba(5,10,15,0.6), rgba(3,8,14,0.95)),
+      radial-gradient(circle at 20% 20%, rgba(255,255,255,0.03), transparent 10%),
+      linear-gradient(90deg, rgba(10,10,30,0.05), rgba(40,20,60,0.03));
+    filter:blur(6px) saturate(.9);
+    opacity:.75;
+  }
+  .layer.far::before{
+    content:"";
+    position:absolute;left:0;right:0;bottom:40px;height:180px;
+    background:
+      linear-gradient(90deg,#081026 10%, #0a1630 30%, #081026 60%, #081026 100%);
+    mask-image:linear-gradient(to top, black, transparent 70%);
+    opacity:.9;
+  }
+
+  /* Mid buildings with windows */
+  .layer.mid{
+    width:1600px;height:420px;
+    transform:translate3d(-50%,-50%,-120px) scale(.98);
+    background:linear-gradient(180deg,#071733,#051226);
+    opacity:1;
+  }
+  /* generate windows using repeating-linear-gradient */
+  .layer.mid::after{
+    content:"";
+    position:absolute;inset:40px 120px 40px 120px;
+    background:
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0 6px, transparent 6px 18px),
+      repeating-linear-gradient(180deg, rgba(255,255,255,0.02) 0 6px, transparent 6px 18px);
+    mix-blend-mode:overlay;
+    filter:contrast(.9) brightness(.8);
+    opacity:.9;
+  }
+
+  /* Near buildings (large, low) */
+  .layer.near{
+    width:1600px;height:340px;
+    transform:translate3d(-50%,-40%, -40px) scale(1);
+    bottom:0;
+    background: linear-gradient(180deg,#0b2232,#02202b);
+    opacity:1;
+  }
+  .layer.near::after{
+    content:"";
+    position:absolute;inset:30px 60px 20px 60px;
+    background:
+      repeating-linear-gradient(180deg, rgba(255,255,255,0.02) 0 18px, transparent 18px 36px);
+    mask-image: linear-gradient(to top, black 0%, transparent 80%);
+  }
+
+  /* street lights (decorative along left/right) */
+  .lights{
+    position:absolute;inset:auto 0 80px 0;height:120px;pointer-events:none;
+  }
+  .lights .p{
+    position:absolute;bottom:0; width:100%; height:1px;
+  }
+  .light {
+    position:absolute;
+    bottom:40px;
+    width:6px;height:6px;border-radius:50%;
+    background:yellow; box-shadow:0 0 8px 2px rgba(255,220,120,0.12);
+    opacity:0.9; animation:blink 1.6s infinite;
+    transform:translateZ(1px);
+  }
+  @keyframes blink{
+    0%{opacity:0.2;transform:translateY(0) scale(0.9)}
+    50%{opacity:1;transform:translateY(-2px) scale(1.05)}
+    100%{opacity:0.2;transform:translateY(0) scale(0.9)}
+  }
+
+  /* main canvas on top */
+  #stageWrap{position:relative;z-index:2;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+  canvas{background:transparent;display:block;border-radius:8px}
+
+  /* HUD */
+  #hud{position:fixed;left:14px;top:14px;background:var(--hud-bg);padding:10px 14px;border-radius:10px;z-index:3;font-weight:700}
+  #hud small{display:block;color:#bcd2df;font-weight:400;font-size:12px;margin-top:6px}
+
+  /* gameover modal */
+  #gameover{position:fixed;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);visibility:hidden;opacity:0;transition:all .25s}
+  #gameover.show{visibility:visible;opacity:1}
+  .goBox{background:linear-gradient(180deg,#081827,#04202b);padding:24px;border-radius:12px;text-align:center;color:#fff;box-shadow:0 10px 40px rgba(2,6,23,0.6)}
+  .btn{margin-top:12px;padding:8px 14px;border-radius:8px;border:none;background:#60a5fa;color:#03203a;font-weight:800;cursor:pointer}
+
+  /* responsive */
+  @media (max-width:600px){
+    .layer{display:none} /* hide heavy background on tiny screens for perf */
+  }
 </style>
 </head>
 <body>
-<div class="wrap" role="application" aria-label="Komandir o'yini">
-  <header>
-    <div>
-      <h1>Komandir — Bayroqni egallash</h1>
-      <div class="muted">Bosib bayroqni egallasang — askar yuboriladi. 5 miss → Game Over.</div>
-    </div>
-    <div class="controls">
-      <button id="start" class="btn">Start</button>
-      <button id="pause" class="btn ghost">Pause</button>
-      <button id="reset" class="btn ghost">Reset</button>
-    </div>
-  </header>
 
-  <main>
-    <section class="field">
-      <div class="battlefield" id="field" aria-live="polite">
-        <div class="base" id="base"><span>BASE</span></div>
-        <div class="gameover" id="gameover">
-          <div style="font-size:26px;font-weight:900;color:var(--danger)">❌ GAME OVER ❌</div>
-          <div id="finalText" style="font-weight:700"></div>
-          <button id="tryAgain" class="btn">Qayta urinish</button>
-        </div>
-      </div>
-      <footer>Yaratuvchi: Shodiyor — demo</footer>
-    </section>
+<!-- City background (parallax layers) -->
+<div id="city" aria-hidden="true">
+  <div class="layer far"></div>
+  <div class="layer mid"></div>
+  <div class="layer near"></div>
 
-    <aside class="panel" aria-hidden="false">
-      <div class="stat"><span>Ball</span><span id="score">0</span></div>
-      <div class="stat"><span>Eng yuqori</span><span id="high">0</span></div>
-      <div class="stat"><span>O'tkazilgan</span><span id="miss">0</span></div>
-      <div class="stat"><span>Bayroq tezligi</span><span id="spawnSpeed">1500ms</span></div>
-      <div class="muted">Ko'rsatma: Bayroq paydo bo'lganda unga bosing. Ba'zi bayroqlar tezroqlari yoki ko'proq ball beradi.</div>
-    </aside>
-  </main>
+  <div class="lights">
+    <div class="p" style="left:8%"><span class="light" style="left:0;"></span></div>
+    <div class="p" style="left:20%"><span class="light" style="left:0; animation-delay:.2s"></span></div>
+    <div class="p" style="left:32%"><span class="light" style="left:0; animation-delay:.4s"></span></div>
+    <div class="p" style="left:48%"><span class="light" style="left:0; animation-delay:.6s"></span></div>
+    <div class="p" style="left:64%"><span class="light" style="left:0; animation-delay:.9s"></span></div>
+    <div class="p" style="left:78%"><span class="light" style="left:0; animation-delay:1.1s"></span></div>
+    <div class="p" style="left:90%"><span class="light" style="left:0; animation-delay:1.4s"></span></div>
+  </div>
+</div>
+
+<!-- Stage -->
+<div id="stageWrap">
+  <canvas id="game" width="420" height="680" aria-label="Avtomobil o'yini"></canvas>
+</div>
+
+<div id="hud">
+  Ball: <span id="score">0</span> &nbsp; Lives: <span id="lives">1</span><br/>
+  <small>← → harakat, avtomobilga urilmasdan qancha ko‘p o‘tkazsangiz — ball</small>
+</div>
+
+<div id="gameover" role="dialog" aria-hidden="true">
+  <div class="goBox">
+    <div style="font-size:22px;font-weight:900">💥 To‘qnashuv! 💥</div>
+    <div id="finalScore" style="margin-top:8px">Ball: 0</div>
+    <button class="btn" id="restartBtn">Qayta o‘ynash</button>
+  </div>
 </div>
 
 <script>
-(() => {
-  // Sozlamalar
-  const SETTINGS = {
-    maxMiss: 5,
-    initialSpawn: 1500, // ms
-    minSpawn: 600,
-    spawnDecrease: 100, // har 10 soniyada kamayadi
-    difficultyStepTime: 10000, // ms
-    flagTimeoutFactor: 0.95 // flag qancha vaqt turadi (ms) = spawnTime * factor
-  };
+/* ========= GAME + AUDIO ========== */
 
-  // DOM
-  const field = document.getElementById('field');
-  const base = document.getElementById('base');
-  const startBtn = document.getElementById('start');
-  const pauseBtn = document.getElementById('pause');
-  const resetBtn = document.getElementById('reset');
-  const tryAgain = document.getElementById('tryAgain');
-  const scoreEl = document.getElementById('score');
-  const highEl = document.getElementById('high');
-  const missEl = document.getElementById('miss');
-  const spawnSpeedEl = document.getElementById('spawnSpeed');
-  const gameoverEl = document.getElementById('gameover');
-  const finalText = document.getElementById('finalText');
+/* Canvas setup */
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const gameoverEl = document.getElementById('gameover');
+const finalScore = document.getElementById('finalScore');
+const restartBtn = document.getElementById('restartBtn');
 
-  // holat
-  let score = 0;
-  let high = Number(localStorage.getItem('commander_high') || 0);
-  let miss = 0;
-  let spawnTime = SETTINGS.initialSpawn;
-  let spawnTimer = null;
-  let difficultyTimer = null;
-  let running = false;
-  let activeFlags = new Map(); // id -> timeout
+let W = canvas.width, H = canvas.height;
+function resizeCanvas() {
+  // keep fixed logical size for consistent gameplay; scale CSS for responsiveness
+  const scale = Math.min(window.innerWidth / 420, window.innerHeight / 680, 1);
+  canvas.style.width = (W * scale) + 'px';
+  canvas.style.height = (H * scale) + 'px';
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
 
-  highEl.textContent = high;
-  scoreEl.textContent = score;
-  missEl.textContent = miss;
-  spawnSpeedEl.textContent = spawnTime + 'ms';
+/* Game state */
+let player = { x: 190, y: 560, w: 40, h: 70, speed: 6 };
+let enemies = [];
+let keys = {};
+let score = 0;
+let speed = 3;   // base vertical speed of enemy cars
+let tick = 0;
+let running = false;
+let timer = 0;
 
-  // Helper: random position (x,y) ichida battlefield, bayroq joylashuvi
-  function randomPos() {
-    const rect = field.getBoundingClientRect();
-    // keep area above base (y at least 60px from bottom)
-    const padding = 20;
-    const x = Math.random() * (rect.width - 80) + padding;
-    const y = Math.random() * (rect.height - 180) + padding;
-    return { x, y };
+/* Audio with WebAudio API */
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+let engineNode = null;
+let engineGain = null;
+
+function initAudio() {
+  if (audioCtx) return;
+  audioCtx = new AudioCtx();
+
+  // engine: oscillator with low frequency, controlled by filter and gain
+  const osc = audioCtx.createOscillator();
+  osc.type = 'sawtooth';
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 600;
+
+  engineGain = audioCtx.createGain();
+  engineGain.gain.value = 0; // start silent
+
+  osc.connect(filter);
+  filter.connect(engineGain);
+  engineGain.connect(audioCtx.destination);
+  osc.start();
+
+  engineNode = { osc, filter, gain: engineGain };
+}
+
+// create short crash noise (white noise burst)
+function playCrash() {
+  if (!audioCtx) initAudio();
+  const bufferSize = audioCtx.sampleRate * 0.25; // 0.25s
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    // noise shaped envelope
+    data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+  }
+  const src = audioCtx.createBufferSource();
+  src.buffer = buffer;
+  const g = audioCtx.createGain();
+  g.gain.value = 0.6;
+  src.connect(g);
+  g.connect(audioCtx.destination);
+  src.start();
+}
+
+/* Controls */
+document.addEventListener('keydown', (e)=>{ keys[e.key] = true; if (!audioCtx) initAudio(); });
+document.addEventListener('keyup', (e)=>{ keys[e.key] = false; });
+
+/* Draw helper: simple car shape */
+function drawCar(x,y,w,h,color,angle=0){
+  ctx.save();
+  ctx.translate(x + w/2, y + h/2);
+  ctx.rotate(angle * Math.PI/180);
+  ctx.translate(-w/2, -h/2);
+  // body
+  ctx.fillStyle = color;
+  roundRect(ctx, 0, 0, w, h, 6, true, false);
+  // windows
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  roundRect(ctx+0, 6, 8, w-12, h/3, 4, true, false); // not using + operator; fix below
+  ctx.restore();
+}
+// Because above attempt to call roundRect incorrectly, we implement directly:
+function drawSimpleCar(x,y,w,h,color){
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  // rounded rect
+  const r = 6;
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.fill();
+  // windows rectangle
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.fillRect(x + w*0.18, y + h*0.12, w*0.64, h*0.28);
+  ctx.restore();
+}
+
+/* spawn enemy car */
+function spawnEnemy() {
+  const lanesX = [60, 130, 200, 270]; // four lanes aligned with road visuals
+  const x = lanesX[Math.floor(Math.random()*lanesX.length)];
+  const colorPalette = ['#e74c3c','#f39c12','#3498db','#9b59b6','#2ecc71'];
+  const color = colorPalette[Math.floor(Math.random()*colorPalette.length)];
+  enemies.push({ x, y: -120, w: 40, h: 80, color, passed:false });
+}
+
+/* collision check */
+function rectsOverlap(a,b){
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+/* game over */
+function endGame(){
+  running = false;
+  playCrash();
+  document.getElementById('finalScore').textContent = 'Ball: ' + score;
+  gameoverEl.classList.add('show');
+  // stop engine sound
+  if (engineNode && engineNode.gain) engineNode.gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+}
+
+/* restart */
+function restart(){
+  enemies = [];
+  score = 0;
+  document.getElementById('score').textContent = score;
+  speed = 3;
+  tick = 0;
+  gameoverEl.classList.remove('show');
+  running = true;
+  if (audioCtx && engineNode) engineNode.gain.gain.value = 0;
+  loop();
+}
+
+restartBtn.addEventListener('click', restart);
+
+/* main loop */
+function loop(){
+  if (!running) {
+    // draw idle frame with road
+    drawScene();
+    return;
+  }
+  tick++;
+  // update
+  // player movement
+  if (keys['ArrowLeft'] || keys['a']) { player.x -= player.speed; if (player.x < 40) player.x = 40; }
+  if (keys['ArrowRight'] || keys['d']) { player.x += player.speed; if (player.x > W - player.w - 40) player.x = W - player.w - 40; }
+
+  // engine sound dynamics: if moving, increase gain and raise filter freq
+  if (audioCtx && engineNode) {
+    const moving = keys['ArrowLeft'] || keys['ArrowRight'] || keys['a'] || keys['d'];
+    const targetGain = moving ? 0.12 : 0.0;
+    engineNode.gain.gain.linearRampToValueAtTime(targetGain, audioCtx.currentTime + 0.08);
+    // change filter freq by speed a bit
+    const baseFreq = 400 + (speed - 3) * 80;
+    engineNode.filter.frequency.linearRampToValueAtTime(baseFreq, audioCtx.currentTime + 0.1);
+    // small stereo pan imitation by slightly detuning oscillator
+    engineNode.osc.detune.setValueAtTime(moving ? 60 : 0, audioCtx.currentTime);
   }
 
-  // Create flag
-  let idCounter = 0;
-  function spawnFlag(special=false) {
-    if (!running) return;
-    const id = ++idCounter;
-    const { x, y } = randomPos();
-    const el = document.createElement('div');
-    el.className = 'flag';
-    el.style.left = x + 'px';
-    el.style.top = y + 'px';
-    el.dataset.id = id;
-    // special bayroq: ko'proq ball yoki tezroq timeout
-    if (special) {
-      el.textContent = '🏁'; // special
-      el.dataset.points = '2';
-      el.dataset.special = '1';
-    } else {
-      el.textContent = '🚩';
-      el.dataset.points = '1';
-      el.dataset.special = '0';
-    }
-    field.appendChild(el);
+  // spawn enemies occasionally
+  if (Math.random() < 0.015) spawnEnemy();
 
-    // click handler: yubor askar
-    el.addEventListener('pointerdown', () => {
-      if (!running) return;
-      captureFlag(id, el);
-    });
-
-    // set timeout: agar vaqt tugasa -> missed (faqat agar urilmagan bo'lsa)
-    const life = Math.max(500, spawnTime * SETTINGS.flagTimeoutFactor * (special ? 0.85 : 1));
-    const t = setTimeout(() => {
-      // agar element hali mavjud va urilmagan
-      if (field.contains(el)) {
-        el.remove();
-        activeFlags.delete(id);
-        missed();
-      }
-    }, life);
-    activeFlags.set(id, t);
-  }
-
-  // capture: animatsiya: soldier moves from base to flag, then score increase
-  function captureFlag(id, flagEl) {
-    // prevent double capture
-    if (!field.contains(flagEl)) return;
-    // remove timeout
-    const t = activeFlags.get(id);
-    if (t) clearTimeout(t);
-    activeFlags.delete(id);
-
-    // create soldier
-    const soldier = document.createElement('div');
-    soldier.className = 'soldier';
-    soldier.textContent = '🪖';
-    field.appendChild(soldier);
-
-    // compute base center and flag center positions relative to field
-    const fRect = field.getBoundingClientRect();
-    const baseRect = base.getBoundingClientRect();
-    const flagRect = flagEl.getBoundingClientRect();
-    const startX = baseRect.left + baseRect.width/2 - fRect.left - 21; // soldier half width
-    const startY = baseRect.top + baseRect.height/2 - fRect.top - 21;
-    const endX = flagRect.left + flagRect.width/2 - fRect.left - 21;
-    const endY = flagRect.top + flagRect.height/2 - fRect.top - 21;
-
-    soldier.style.left = startX + 'px';
-    soldier.style.top = startY + 'px';
-    // force reflow
-    void soldier.offsetWidth;
-
-    // animate using transform
-    soldier.style.transition = 'transform 0.6s linear';
-    const dx = endX - startX;
-    const dy = endY - startY;
-    soldier.style.transform = `translate(${dx}px, ${dy}px) scale(1.05)`;
-
-    // after arrival
-    setTimeout(() => {
-      // explosion-like pop
-      soldier.style.transition = 'transform .18s ease-out, opacity .3s';
-      soldier.style.transform += ' scale(0.6)';
-      soldier.style.opacity = '0';
-      setTimeout(()=> soldier.remove(), 300);
-      // remove flag and add score
-      if (field.contains(flagEl)) flagEl.remove();
-      // update score
-      const pts = Number(flagEl.dataset.points || 1);
-      score += pts;
+  // move enemies
+  for (let i = enemies.length - 1; i >= 0; i--) {
+    const e = enemies[i];
+    e.y += speed;
+    // passed
+    if (!e.passed && e.y > H) {
+      e.passed = true;
+      enemies.splice(i,1);
+      score++;
       scoreEl.textContent = score;
-      if (score > high) {
-        high = score;
-        localStorage.setItem('commander_high', String(high));
-        highEl.textContent = high;
+    } else {
+      // collision
+      if (rectsOverlap({x:player.x,y:player.y,w:player.w,h:player.h}, e)) {
+        endGame();
       }
-    }, 650);
-  }
-
-  function missed() {
-    miss++;
-    missEl.textContent = miss;
-    if (miss >= SETTINGS.maxMiss) {
-      endGame();
     }
   }
 
-  // spawn loop
-  function startSpawning() {
-    if (spawnTimer) clearInterval(spawnTimer);
-    spawnTimer = setInterval(() => {
-      // sometimes spawn special flag
-      const special = Math.random() < 0.12; // 12% chance
-      spawnFlag(special);
-    }, spawnTime);
+  // increase difficulty every 7 seconds
+  if (tick % Math.floor(60 * 7) === 0) {
+    speed = Math.min(9, speed + 0.6);
+    // update subtle background movement (parallax) by rotating layers slightly
+    // (we update CSS transforms)
+    document.querySelectorAll('#city .layer').forEach((el, idx) => {
+      const z = -300 + idx * 120;
+      el.style.transform = `translate3d(-50%,-${60 - idx*5}%, ${z}px) scale(${1 - idx*0.02}) rotateY(${(Math.random()-0.5)*2}deg)`;
+    });
   }
 
-  // difficulty increase
-  function startDifficulty() {
-    if (difficultyTimer) clearInterval(difficultyTimer);
-    difficultyTimer = setInterval(() => {
-      if (spawnTime > SETTINGS.minSpawn) {
-        spawnTime = Math.max(SETTINGS.minSpawn, spawnTime - SETTINGS.spawnDecrease);
-        spawnSpeedEl.textContent = spawnTime + 'ms';
-        // restart spawn loop with new speed
-        startSpawning();
-      }
-    }, SETTINGS.difficultyStepTime);
+  drawScene();
+  requestAnimationFrame(loop);
+}
+
+/* draw whole scene (road + player + enemies + HUD done elsewhere) */
+function drawScene(){
+  // background (road)
+  ctx.clearRect(0,0,W,H);
+
+  // draw sky glow
+  const sky = ctx.createLinearGradient(0,0,0,H*0.45);
+  sky.addColorStop(0,'#071226');
+  sky.addColorStop(1,'#00141c');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0,0,W,H);
+
+  // road area
+  ctx.fillStyle = '#2b2b2b';
+  ctx.fillRect(40, 80, W - 80, H - 160);
+
+  // side sidewalks
+  ctx.fillStyle = '#1f1f1f';
+  ctx.fillRect(0, 80, 40, H - 160);
+  ctx.fillRect(W - 40, 80, 40, H - 160);
+
+  // lane separators
+  ctx.strokeStyle = '#e6e6e6';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(130, 80);
+  ctx.lineTo(130, H - 80);
+  ctx.moveTo(W - 130, 80);
+  ctx.lineTo(W - 130, H - 80);
+  ctx.stroke();
+
+  // dashed center line moving
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 3;
+  for (let y = - (tick * speed % 40); y < H; y += 40) {
+    ctx.beginPath();
+    ctx.moveTo(W/2 - 2, 80 + y);
+    ctx.lineTo(W/2 - 2, 80 + y + 20);
+    ctx.stroke();
   }
 
-  function startGame() {
-    if (running) return;
-    // reset
+  // draw player car (simple shape)
+  drawPlayer();
+
+  // draw enemies
+  enemies.forEach(e => drawEnemy(e));
+}
+
+/* draw player with simple details */
+function drawPlayer(){
+  // body
+  ctx.fillStyle = '#00ffcc';
+  roundedRect(ctx, player.x, player.y, player.w, player.h, 8);
+  ctx.fill();
+  // window
+  ctx.fillStyle = 'rgba(255,255,255,0.14)';
+  ctx.fillRect(player.x + 6, player.y + 10, player.w - 12, 22);
+  // wheels
+  ctx.fillStyle = '#111';
+  ctx.fillRect(player.x + 6, player.y + player.h - 10, 10, 6);
+  ctx.fillRect(player.x + player.w - 16, player.y + player.h - 10, 10, 6);
+}
+
+/* draw enemy car */
+function drawEnemy(e){
+  roundedRect(ctx, e.x, e.y, e.w, e.h, 6);
+  ctx.fillStyle = e.color;
+  ctx.fill();
+  // windows
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.fillRect(e.x + 5, e.y + 10, e.w - 10, 18);
+  // wheels
+  ctx.fillStyle = '#111';
+  ctx.fillRect(e.x + 6, e.y + e.h - 10, 10, 6);
+  ctx.fillRect(e.x + e.w - 16, e.y + e.h - 10, 10, 6);
+}
+
+/* helper rounded rect for path */
+function roundedRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+/* start game on user interaction to enable audio */
+window.addEventListener('pointerdown', ()=> {
+  if (!audioCtx) initAudio();
+  if (!running) {
     running = true;
-    score = 0; miss = 0;
-    spawnTime = SETTINGS.initialSpawn;
-    scoreEl.textContent = score; missEl.textContent = miss; spawnSpeedEl.textContent = spawnTime + 'ms';
-    gameoverEl.classList.remove('show');
-    // clear any existing flags/timeouts
-    activeFlags.forEach(t => clearTimeout(t));
-    activeFlags.clear();
-    // remove leftover flags/soldiers
-    field.querySelectorAll('.flag, .soldier').forEach(el => el.remove());
-
-    startSpawning();
-    startDifficulty();
+    loop();
   }
+});
 
-  function pauseGame() {
-    if (!running) return;
-    running = false;
-    clearInterval(spawnTimer); clearInterval(difficultyTimer);
-    activeFlags.forEach(t => clearTimeout(t)); // freeze: remove timeouts to avoid misses during pause
-    // leave current flags on field (they won't time out)
-  }
+/* start initially */
+running = true;
+loop();
 
-  function endGame() {
-    running = false;
-    clearInterval(spawnTimer); clearInterval(difficultyTimer);
-    // clear timeouts for flags
-    activeFlags.forEach(t => clearTimeout(t));
-    activeFlags.clear();
-    // show game over
-    finalText.textContent = `Sizning ballingiz: ${score}`;
-    gameoverEl.classList.add('show');
-  }
+/* attach restart for external call */
+function restart(){ // override earlier if present
+  enemies = [];
+  score = 0;
+  document.getElementById('score').textContent = score;
+  speed = 3;
+  tick = 0;
+  running = true;
+  gameoverEl.classList.remove('show');
+  if (audioCtx && engineNode) engineNode.gain.gain.setValueAtTime(0, audioCtx.currentTime);
+  loop();
+}
+restartBtn.addEventListener('click', restart);
 
-  function resetAll() {
-    running = false;
-    clearInterval(spawnTimer); clearInterval(difficultyTimer);
-    activeFlags.forEach(t => clearTimeout(t));
-    activeFlags.clear();
-    field.querySelectorAll('.flag, .soldier').forEach(el => el.remove());
-    score = 0; miss = 0;
-    scoreEl.textContent = score; missEl.textContent = miss;
-    spawnTime = SETTINGS.initialSpawn; spawnSpeedEl.textContent = spawnTime + 'ms';
-    gameoverEl.classList.remove('show');
-  }
+/* small optimization: limit enemy array size */
+setInterval(()=>{ if (enemies.length > 30) enemies.splice(0, enemies.length - 30); }, 3000);
 
-  // controls
-  startBtn.addEventListener('click', startGame);
-  pauseBtn.addEventListener('click', () => {
-    if (running) pauseGame(); else startGame();
-  });
-  resetBtn.addEventListener('click', resetAll);
-  tryAgain.addEventListener('click', () => {
-    resetAll();
-    startGame();
-  });
-
-  // accessibility: tap battlefield to spawn a flag manually (for demo)
-  field.addEventListener('dblclick', (e) => {
-    // spawn near click (dev tool)
-    const rect = field.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    // create quick flag with given pos
-    const id = ++idCounter;
-    const el = document.createElement('div');
-    el.className = 'flag';
-    el.style.left = x + 'px';
-    el.style.top = y + 'px';
-    el.dataset.points = '1';
-    field.appendChild(el);
-    el.addEventListener('pointerdown', () => captureFlag(id, el));
-    const t = setTimeout(() => { if (field.contains(el)) { el.remove(); missed(); } }, spawnTime * SETTINGS.flagTimeoutFactor);
-    activeFlags.set(id, t);
-  });
-
-  // initial demo: spawn a flag so it's not empty
-  spawnFlag();
+/* update HUD score on pass events: monitor mutation using proxy? Simpler: update in spawn/pass code */
+(function updateScoreLoop(){
+  // we already update score when car passes; but ensure HUD synced
+  scoreEl.textContent = score;
+  requestAnimationFrame(updateScoreLoop);
 })();
+
+/* Ensure audio context resumes on user gesture for some browsers */
+document.addEventListener('click', function ensureAudio(){
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}, { once: true });
+
 </script>
 </body>
 </html>
