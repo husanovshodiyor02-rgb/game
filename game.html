@@ -3,248 +3,187 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>⭐ Yulduzni Ur!</title>
+<title>🎨 Rangni Top!</title>
 <style>
   body {
+    font-family: 'Segoe UI', sans-serif;
+    background: radial-gradient(circle at top, #1a2a6c, #b21f1f, #fdbb2d);
+    height: 100vh;
     margin: 0;
-    font-family: sans-serif;
-    background: linear-gradient(180deg, #0b132b, #1c2541);
-    color: #fff;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100vh;
+    color: white;
     text-align: center;
   }
 
-  h1 { margin-bottom: 10px; }
+  h1 {
+    font-size: 2em;
+    margin-bottom: 10px;
+    text-shadow: 0 0 10px black;
+  }
 
-  .controls { margin-bottom: 15px; }
+  #colorWord {
+    font-size: 3em;
+    font-weight: bold;
+    margin: 30px 0;
+    transition: 0.3s;
+  }
+
+  .btns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 15px;
+    width: 90%;
+    max-width: 500px;
+  }
 
   button {
-    background: #5bc0be;
+    padding: 15px;
+    font-size: 18px;
     border: none;
-    padding: 10px 16px;
-    margin: 0 4px;
-    border-radius: 8px;
-    font-size: 16px;
+    border-radius: 10px;
     cursor: pointer;
     font-weight: bold;
-    transition: background 0.2s;
-  }
-  button:hover { background: #45a29e; }
-
-  .board {
-    display: grid;
-    grid-template-columns: repeat(4, 80px);
-    gap: 10px;
+    transition: 0.2s;
   }
 
-  .cell {
-    width: 80px;
-    height: 80px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    position: relative;
-    overflow: hidden;
-    cursor: pointer;
+  button:hover {
+    transform: scale(1.1);
   }
 
-  .mole {
-    position: absolute;
-    inset: 10px;
-    background: gold;
-    color: #111;
-    border-radius: 10px;
-    font-size: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transform: translateY(120%);
-    transition: transform 0.25s;
-  }
-  .mole.up { transform: translateY(0%); }
-
-  .info {
-    margin-top: 15px;
+  .stats {
+    margin-top: 20px;
     font-size: 18px;
   }
 
   .gameover {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     background: rgba(0,0,0,0.85);
-    color: #fff;
     display: flex;
-    align-items: center;
+    flex-direction: column;
     justify-content: center;
-    font-size: 32px;
-    font-weight: bold;
+    align-items: center;
+    font-size: 28px;
     visibility: hidden;
     opacity: 0;
-    transition: opacity .3s;
-    flex-direction: column;
+    transition: opacity 0.4s;
   }
+
   .gameover.show {
     visibility: visible;
     opacity: 1;
   }
 
-  @media (max-width: 600px) {
-    .board { grid-template-columns: repeat(3, 80px); }
-  }
-  @media (max-width: 400px) {
-    .board { grid-template-columns: repeat(2, 80px); }
+  @media (max-width: 500px) {
+    h1 { font-size: 1.5em; }
+    #colorWord { font-size: 2.2em; }
   }
 </style>
 </head>
 <body>
 
-<h1>⭐ Yulduzni Ur!</h1>
-<div class="controls">
-  <button id="startBtn">Boshlash</button>
-  <button id="stopBtn">To‘xtatish</button>
-  <button id="resetBtn">Qayta</button>
-</div>
+<h1>🎨 Rangni Top!</h1>
+<div id="colorWord">RED</div>
 
-<div class="board" id="board"></div>
-<div class="info">
-  Ball: <span id="score">0</span> | Eng yuqori: <span id="high">0</span><br>
-  Tezlik: <span id="speed">0.8</span>s | O‘tkazib yuborilgan: <span id="missed">0</span>
+<div class="btns" id="buttons"></div>
+
+<div class="stats">
+  Ball: <span id="score">0</span> | Xato: <span id="mistakes">0</span>
 </div>
 
 <div class="gameover" id="gameover">
-  ❌ GAME OVER ❌
+  ❌ GAME OVER ❌  
   <br><br>
   <span id="finalScore"></span>
   <br><br>
-  <button onclick="resetGame()">Qayta o‘ynash</button>
+  <button onclick="restart()">Qayta o‘ynash</button>
 </div>
 
 <script>
-const board = document.getElementById('board');
-const scoreEl = document.getElementById('score');
-const highEl = document.getElementById('high');
-const speedEl = document.getElementById('speed');
-const missedEl = document.getElementById('missed');
-const gameoverEl = document.getElementById('gameover');
-const finalScore = document.getElementById('finalScore');
+const colors = ["RED", "GREEN", "BLUE", "YELLOW", "PURPLE", "ORANGE"];
+const colorValues = {
+  RED: "#ff3b3b",
+  GREEN: "#3cff5a",
+  BLUE: "#3bb6ff",
+  YELLOW: "#ffe93b",
+  PURPLE: "#d43bff",
+  ORANGE: "#ff913b"
+};
 
 let score = 0;
-let missed = 0;
-let high = localStorage.getItem('highscore') || 0;
-let gameRunning = false;
-let speed = 800; // ms
-let moleTimer, speedTimer;
+let mistakes = 0;
+let delay = 1500;
+let timer;
+let correctColor;
 
-highEl.textContent = high;
+const colorWord = document.getElementById("colorWord");
+const buttonsContainer = document.getElementById("buttons");
+const scoreEl = document.getElementById("score");
+const mistakesEl = document.getElementById("mistakes");
+const gameover = document.getElementById("gameover");
+const finalScore = document.getElementById("finalScore");
 
-// hujayralar yaratish
-for (let i = 0; i < 12; i++) {
-  const cell = document.createElement('div');
-  cell.classList.add('cell');
-  const mole = document.createElement('div');
-  mole.classList.add('mole');
-  mole.textContent = '★';
-  cell.appendChild(mole);
-  board.appendChild(cell);
-
-  cell.addEventListener('click', () => {
-    if (mole.classList.contains('up')) {
-      score++;
-      mole.classList.remove('up');
-      mole.dataset.hit = "true"; // urilgan deb belgilanadi
-      scoreEl.textContent = score;
-    }
-  });
+// Tugmalarni yaratamiz
+for (let name of colors) {
+  const btn = document.createElement("button");
+  btn.textContent = name;
+  btn.style.background = colorValues[name];
+  btn.onclick = () => checkAnswer(name);
+  buttonsContainer.appendChild(btn);
 }
 
-const moles = document.querySelectorAll('.mole');
+function nextRound() {
+  const textColor = colors[Math.floor(Math.random() * colors.length)];
+  correctColor = colors[Math.floor(Math.random() * colors.length)];
 
-function randomMole() {
-  const index = Math.floor(Math.random() * moles.length);
-  const mole = moles[index];
-  mole.classList.add('up');
-  mole.dataset.hit = "false";
+  colorWord.textContent = textColor;
+  colorWord.style.color = colorValues[correctColor];
 
-  setTimeout(() => {
-    // faqat urilmagan bo'lsa xato qo'shiladi
-    if (mole.classList.contains('up') && mole.dataset.hit === "false") {
-      mole.classList.remove('up');
-      missed++;
-      missedEl.textContent = missed;
-      if (missed >= 7) {
-        return gameOver();
-      }
-    } else {
-      mole.classList.remove('up');
-    }
-  }, speed * 0.9);
+  timer = setTimeout(() => {
+    mistakes++;
+    updateUI();
+    if (mistakes >= 7) return gameOver();
+    nextRound();
+  }, delay);
 }
 
-function updateSpeed() {
-  speedEl.textContent = (speed / 1000).toFixed(2);
-}
-
-function startGame() {
-  if (gameRunning) return;
-  gameRunning = true;
-  score = 0;
-  missed = 0;
-  scoreEl.textContent = 0;
-  missedEl.textContent = 0;
-  speed = 800;
-  updateSpeed();
-  gameoverEl.classList.remove('show');
-
-  moleTimer = setInterval(randomMole, speed);
-
-  // har 10 sekundda tezlashadi
-  speedTimer = setInterval(() => {
-    if (speed > 300) {
-      speed -= 100;
-      updateSpeed();
-      clearInterval(moleTimer);
-      moleTimer = setInterval(randomMole, speed);
-    }
-  }, 10000);
-}
-
-function stopGame() {
-  gameRunning = false;
-  clearInterval(moleTimer);
-  clearInterval(speedTimer);
-  if (score > high) {
-    high = score;
-    localStorage.setItem('highscore', high);
-    highEl.textContent = high;
+function checkAnswer(choice) {
+  clearTimeout(timer);
+  if (choice === correctColor) {
+    score++;
+    if (delay > 600) delay -= 100; // tezlashadi
+  } else {
+    mistakes++;
+    if (mistakes >= 7) return gameOver();
   }
+  updateUI();
+  nextRound();
+}
+
+function updateUI() {
+  scoreEl.textContent = score;
+  mistakesEl.textContent = mistakes;
 }
 
 function gameOver() {
-  stopGame();
+  clearTimeout(timer);
+  gameover.classList.add("show");
   finalScore.textContent = `Sizning ballingiz: ${score}`;
-  gameoverEl.classList.add('show');
 }
 
-function resetGame() {
-  gameRunning = false;
-  missed = 0;
+function restart() {
   score = 0;
-  missedEl.textContent = 0;
-  scoreEl.textContent = 0;
-  speed = 800;
-  updateSpeed();
-  gameoverEl.classList.remove('show');
+  mistakes = 0;
+  delay = 1500;
+  gameover.classList.remove("show");
+  updateUI();
+  nextRound();
 }
 
-document.getElementById('startBtn').onclick = startGame;
-document.getElementById('stopBtn').onclick = stopGame;
-document.getElementById('resetBtn').onclick = resetGame;
+nextRound();
 </script>
 
 </body>
